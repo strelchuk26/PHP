@@ -1,0 +1,11 @@
+/* input */
+.image {
+    position: absolute;
+    left: 10%;
+}
+
+/* button */
+#imageBtn {
+   background-color: transparent;
+   border: none;
+}
