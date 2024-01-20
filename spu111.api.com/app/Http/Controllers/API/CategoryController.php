@@ -15,6 +15,11 @@ class CategoryController extends Controller
         return response()->json($list, 200, ['Charset'=>'utf-8']);
     }
 
+    public function getById($id) {
+        $category = Categories::findOrFail($id);
+        return response()->json($category,200, ['Charset' => 'utf-8']);
+    }
+
     function create(Request $request) {
         $input = $request->all();
         $image = $request->file("image");
@@ -33,18 +38,29 @@ class CategoryController extends Controller
     }
 
     function update(Request $request, $id) {
-        $category = Categories::find($id);
-        if (!$category) {
-            return response()->json(['message' => 'Category not found'], 404);
+        $category = Categories::findOrFail($id);
+        $imageName=$category->image;
+        $inputs = $request->all();
+        if($request->hasFile("image")) {
+            $image = $request->file("image");
+            $imageName = uniqid() . ".webp";
+            $sizes = [50, 150, 300, 600, 1200];
+            $manager = new ImageManager(new Driver());
+            foreach ($sizes as $size) {
+                $fileSave = $size . "_" . $imageName;
+                $imageRead = $manager->read($image);
+                $imageRead->scale(width: $size);
+                $path = public_path('upload/' . $fileSave);
+                $imageRead->toWebp()->save($path);
+                $removeImage = public_path('upload/'.$size."_". $category->image);
+                if(file_exists($removeImage))
+                    unlink($removeImage);
+            }
         }
-        $validatedData = $request->validate([
-            'name' => 'required|max:255',
-            'image' => 'required|max:255'
-        ]);
-
-        $category->update($validatedData);
-
-        return response()->json(['message' => 'Category updated successfully', compact('category')]);
+        $inputs["image"]= $imageName;
+        $category->update($inputs);
+        return response()->json($category,200,
+            ['Content-Type' => 'application/json;charset=UTF-8', 'Charset' => 'utf-8'], JSON_UNESCAPED_UNICODE);
     }
 
     function destroy($id) {
